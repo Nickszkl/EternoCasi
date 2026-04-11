@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Livro Interativo</title>
+
+  <!-- Fonte -->
+  <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      color: white;
+      overflow-x: hidden;
+      font-family: 'Libre Baskerville', serif;
+      background: linear-gradient(135deg, #ff6a00, #2e003e, #000000);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* CANVAS */
+    #waveCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    header, .container, .footer-img {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    /* GRANULADO */
+    body::after {
+      content: "";
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      background: url('https://grainy-gradients.vercel.app/noise.svg');
+      opacity: 0.12;
+      pointer-events: none;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .logo {
+    width: 60px;
+    height: 60px;
+
+    background-image: url('0.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    }
+
+    nav {
+      display: flex;
+      gap: 15px;
+      font-size: 0.9rem;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      position: relative;
+    }
+
+    nav a::after {
+      content: "";
+      position: absolute;
+      width: 0%;
+      height: 1px;
+      bottom: -3px;
+      left: 0;
+      background: white;
+      transition: 0.3s;
+    }
+
+    nav a:hover::after {
+      width: 100%;
+    }
+
+    .container {
+      padding: 20px;
+      text-align: center;
+      animation: fadeIn 1s ease;
+    }
+
+    .title {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      opacity: 0.7;
+      font-style: italic;
+      margin-bottom: 30px;
+    }
+
+    .description {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      background: rgba(255,255,255,0.05);
+      padding: 18px;
+      border-radius: 12px;
+      margin-bottom: 25px;
+      backdrop-filter: blur(10px);
+    }
+
+    .spotify-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      justify-content: center;
+      background: #1db954;
+      padding: 14px;
+      border-radius: 10px;
+      text-decoration: none;
+      color: white;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+
+    .spotify-box:hover {
+      transform: scale(1.04);
+    }
+
+    /* IMAGEM FINAL */
+    .footer-img {
+      margin: 10px 0;
+      display: flex;
+      justify-content: center;
+    }
+
+    .footer-img img {
+      width: 80%;
+      max-width: 400px;
+      opacity: 0.9;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+  </style>
+</head>
+
+<body>
+
+<canvas id="waveCanvas"></canvas>
+
+<header>
+  <div class="logo"></div>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="livro.html">Leitura</a>
+    <a href="playlist.html">Playlist</a>
+  </nav>
+</header>
+
+<div class="container">
+  <div class="title">O AMOR É TEU NOME</div>
+  <div class="subtitle">
+    Desde que comecei a te amar, até meu coração aprendeu a sussurrar teu nome
+  </div>
+
+  <div class="description">
+    Aqui vai a descrição do livro e do site. Escreva algo profundo, algo que faça a pessoa sentir antes mesmo de começar a leitura.
+  </div>
+
+  <a class="spotify-box" href="https://open.spotify.com/playlist/6viT34YK1mnhsKrsHCsy87?si=bdb30e8eb1e740a1" target="_blank">
+    <i class="fab fa-spotify"></i>
+    El Eterno Casi
+  </a>
+</div>
+
+<!-- IMAGEM FINAL -->
+<div class="footer-img">
+  <img src="fundo.png" alt="Imagem final">
+</div>
+
+<script>
+  const canvas = document.getElementById("waveCanvas");
+  const ctx = canvas.getContext("2d");
+
+  let waves = [];
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+
+  resizeCanvas();
+  window.addEventListener("resize", resizeCanvas);
+
+  function createWave(x, y) {
+    waves.push({
+      x,
+      y,
+      radius: 0,
+      alpha: 0.6
+    });
+  }
+
+  document.addEventListener("click", (e) => {
+    createWave(e.clientX, e.clientY);
+  });
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    waves.forEach((wave, index) => {
+      wave.radius += 3.5;
+      wave.alpha -= 0.006;
+
+      if (wave.alpha <= 0) {
+        waves.splice(index, 1);
+        return;
+      }
+
+      const gradient = ctx.createRadialGradient(
+        wave.x, wave.y, wave.radius * 0.2,
+        wave.x, wave.y, wave.radius
+      );
+
+      gradient.addColorStop(0, `rgba(255,120,0,${wave.alpha})`);
+      gradient.addColorStop(0.4, `rgba(150,0,255,${wave.alpha * 0.6})`);
+      gradient.addColorStop(1, "transparent");
+
+      ctx.beginPath();
+      ctx.arc(wave.x, wave.y, wave.radius, 0, Math.PI * 2);
+      ctx.fillStyle = gradient;
+      ctx.fill();
+    });
+
+    requestAnimationFrame(animate);
+  }
+
+  animate();
+</script>
+
+</body>
+</html>
