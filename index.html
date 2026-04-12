@@ -39,7 +39,7 @@
       pointer-events: none;
     }
 
-    header, .container, .footer-img {
+    header, .container{
       position: relative;
       z-index: 1;
       width: 100%;
@@ -150,9 +150,13 @@
 
     /* IMAGEM FINAL */
     .footer-img {
+      posicion: static;
       margin: 130px 0;
       display: flex;
       justify-content: center;
+      z-index: 1;
+      width: 100%;
+      max-width: 400px;
     }
 
     .footer-img img {
