@@ -235,7 +235,7 @@ async function init() {
     pages.push(cover);
 
     /* ⚠️ MOBILE SAFE: só carrega primeiras páginas */
-    const maxPages = Math.min(pdf.numPages, 30);
+    const maxPages = Math.min(pdf.numPages, 239);
 
     for (let i = 1; i <= maxPages; i++) {
       pages.push(await renderPage(pdf, i));
