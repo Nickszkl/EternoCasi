@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Livro Cinemático</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  color: white;
+  overflow-x: hidden;
+  font-family: 'Libre Baskerville', serif;
+  background: linear-gradient(135deg, #ff6a00, #2e003e, #000000);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* GRANULADO */
+body::after {
+  content: "";
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  background: url('https://grainy-gradients.vercel.app/noise.svg');
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+/* HEADER IGUAL AO INDEX */
+header {
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  z-index: 2;
+}
+
+.logo {
+  width: 60px;
+  height: 60px;
+  background: url('0.png') center/cover no-repeat;
+}
+
+nav {
+  display: flex;
+  gap: 15px;
+  font-size: 0.9rem;
+}
+
+nav a {
+  color: white;
+  text-decoration: none;
+  position: relative;
+}
+
+nav a::after {
+  content: "";
+  position: absolute;
+  width: 0%;
+  height: 1px;
+  bottom: -3px;
+  left: 0;
+  background: white;
+  transition: 0.3s;
+}
+
+nav a:hover::after {
+  width: 100%;
+}
+
+/* FUNDO ANIMADO */
+#waveCanvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+/* LIVRO */
+#book {
+  margin-top: 20px;
+  width: 90vw;
+  max-width: 380px;
+  height: calc(90vw * 1.4);
+  max-height: 540px;
+  z-index: 2;
+
+  box-shadow:
+    0 40px 100px rgba(0,0,0,0.7),
+    inset 0 0 30px rgba(0,0,0,0.2);
+
+  border-radius: 8px;
+  transform: perspective(1200px) rotateX(2deg);
+}
+
+.page {
+  background: #f4ecd8;
+}
+
+.cover {
+  background: url("capa.png") center/cover no-repeat;
+}
+
+#loading {
+  margin-top: 20px;
+  z-index: 2;
+}
+
+/* MOBILE AJUSTE */
+@media (max-width: 480px) {
+  #book {
+    height: calc(90vw * 1.5);
+  }
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="waveCanvas"></canvas>
+
+<header>
+  <div class="logo"></div>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="livro.html">Leitura</a>
+    <a href="playlist.html">Playlist</a>
+  </nav>
+</header>
+
+<div id="loading">Carregando livro...</div>
+<div id="book"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/page-flip/dist/js/page-flip.browser.min.js"></script>
+
+<script>
+/* ======================
+   FUNDO ANIMADO (IGUAL INDEX)
+====================== */
+
+const canvas = document.getElementById("waveCanvas");
+const ctx = canvas.getContext("2d");
+
+let waves = [];
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener("resize", resizeCanvas);
+
+document.addEventListener("click", (e) => {
+  waves.push({ x: e.clientX, y: e.clientY, r: 0, a: 0.6 });
+});
+
+function animate() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  waves.forEach((w, i) => {
+    w.r += 3;
+    w.a -= 0.01;
+
+    if (w.a <= 0) waves.splice(i,1);
+
+    const g = ctx.createRadialGradient(w.x,w.y,w.r*0.2,w.x,w.y,w.r);
+    g.addColorStop(0, `rgba(255,120,0,${w.a})`);
+    g.addColorStop(1, "transparent");
+
+    ctx.beginPath();
+    ctx.arc(w.x,w.y,w.r,0,Math.PI*2);
+    ctx.fillStyle = g;
+    ctx.fill();
+  });
+
+  requestAnimationFrame(animate);
+}
+animate();
+
+/* ======================
+   LIVRO OTIMIZADO
+====================== */
+
+const url = "ATN.pdf";
+let flip;
+
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+"https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+async function renderPage(pdf, num) {
+  const page = await pdf.getPage(num);
+  const vp = page.getViewport({ scale: 1.2 });
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = vp.width;
+  canvas.height = vp.height;
+
+  await page.render({ canvasContext: ctx, viewport: vp }).promise;
+
+  const div = document.createElement("div");
+  div.className = "page";
+  div.appendChild(canvas);
+
+  return div;
+}
+
+async function init() {
+  const book = document.getElementById("book");
+  const loading = document.getElementById("loading");
+
+  try {
+    const pdf = await pdfjsLib.getDocument(url).promise;
+
+    let pages = [];
+
+    /* CAPA */
+    const cover = document.createElement("div");
+    cover.className = "page cover";
+    pages.push(cover);
+
+    /* ⚠️ MOBILE SAFE: só carrega primeiras páginas */
+    const maxPages = Math.min(pdf.numPages, 30);
+
+    for (let i = 1; i <= maxPages; i++) {
+      pages.push(await renderPage(pdf, i));
+    }
+
+    flip = new St.PageFlip(book, {
+      width: book.clientWidth,
+      height: book.clientHeight,
+      showCover: true,
+      maxShadowOpacity: 0.8,
+      flippingTime: 700,
+      useMouseEvents: true
+    });
+
+    flip.loadFromHTML(pages);
+
+    loading.style.display = "none";
+
+  } catch (err) {
+    console.error(err);
+    loading.innerText = "Erro ao carregar livro";
+  }
+}
+
+init();
+</script>
+
+</body>
+</html>
